@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // ==========================================
-// GAME CONFIGURATION & GLOBALS
+// 1. GLOBAL VARIABLES & CORE CONFIG
 // ==========================================
 const CONFIG = {
     customModelUrl: 'us_marine_-_vietnam_1960s_-_free_download.glb',
@@ -11,7 +11,7 @@ const CONFIG = {
 };
 
 const activeMixers = [];
-const keys = {}; // FIXED: Added missing input tracking definition
+const keys = {}; 
 let yaw = 0, pitch = 0;
 
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
@@ -47,9 +47,9 @@ function saveKills(amt) {
 }
 
 // ==========================================
-// FIXED FULLSCREEN HARDWARE INTERFACE
+// 2. FIXED FULLSCREEN ENGINE
 // ==========================================
-function toggleFullscreen() {
+function autoFullscreen() {
     const doc = window.document.documentElement;
     const isFull = document.fullscreenElement || 
                    document.webkitFullscreenElement || 
@@ -78,15 +78,15 @@ function toggleFullscreen() {
 
 const fsBtn = document.getElementById('btn-fullscreen');
 if (fsBtn) {
-    fsBtn.addEventListener('click', toggleFullscreen);
+    fsBtn.addEventListener('click', autoFullscreen);
     fsBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        toggleFullscreen();
+        autoFullscreen();
     }, { passive: false });
 }
 
 // ==========================================
-// EDITABLE HUD PRESETS
+// 3. EDITABLE HUD STORAGE
 // ==========================================
 const hudBtns = document.querySelectorAll('.m-btn');
 hudBtns.forEach(btn => { 
@@ -139,7 +139,7 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('touchend', () => { dragEl = null; });
 
 // ==========================================
-// AUDIO LOGIC
+// 4. CHIP AUDIO SYNTHESIZERS
 // ==========================================
 let audioCtx;
 class Sfx {
@@ -154,7 +154,7 @@ class Sfx {
 }
 
 // ==========================================
-// GAME STATE MANAGEMENT
+// 5. WEAPONS & INVENTORY ENGINE
 // ==========================================
 const state = { mode: 'none', isPlaying: false, isAiming: false, isSprinting: false, isCrouching: false, inShop: false, coins: 0, score: 0, hp: 100, nextFireTime: 0, ammo: 12, grenades: 3, matchDeaths: 0, isFiring: false, isChargingGrenade: false, grenadeCharge: 0, team: -1, is1v3: false };
 const WIN_TARGET = 20;
@@ -173,7 +173,7 @@ let currentWeapon = weapons.pistol;
 let inventory = ['pistol'];
 
 // ==========================================
-// SCENE SETUP
+// 6. THREE.JS VIEWPORTS
 // ==========================================
 const mapSize = 160;
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x87CEFA); scene.fog = new THREE.FogExp2(0x87CEFA, 0.008); 
@@ -194,7 +194,7 @@ const cube = new THREE.BoxGeometry(1,1,1);
 const theSun = new THREE.Mesh(new THREE.BoxGeometry(15,15,15), new THREE.MeshBasicMaterial({color: 0xFFFFAA})); theSun.position.set(150, 200, 100); scene.add(theSun);
 
 // ==========================================
-// MAP & MAP COLLISIONS
+// 7. COLLISION WORLD ENGINE
 // ==========================================
 const colliders = [], raycastTargets = [], jumpPads = [], explosiveBarrels = [];
 function registerAABB(mesh, sX, sY, sZ) { colliders.push({ minX: mesh.position.x - sX/2, maxX: mesh.position.x + sX/2, minY: mesh.position.y - sY/2, maxY: mesh.position.y + sY/2, minZ: mesh.position.z - sZ/2, maxZ: mesh.position.z + sZ/2 }); }
@@ -223,25 +223,14 @@ for(let i=0; i<85; i++) {
     else addObj(0xF44336, rx, 1.1, rz, 1.6, 2.2, 1.6, "barrel");
 }
 
-// ==========================================
-// GLTF INTERFACE AND LOADERS
-// ==========================================
-function createWeaponMesh(type) {
-    const group = new THREE.Group();
-    const dark = new THREE.MeshStandardMaterial({color: 0x222222}), grey = new THREE.MeshStandardMaterial({color: 0x555555}), wood = new THREE.MeshStandardMaterial({color: 0x5D4037});
-    const addP = (mat, sx,sy,sz, px,py,pz) => { const m = new THREE.Mesh(cube, mat); m.scale.set(sx,sy,sz); m.position.set(px,py,pz); m.castShadow=true; group.add(m); return m; };
-    if(type==='pistol') { addP(grey, 0.12,0.18,0.5, 0,0.1,0); addP(dark, 0.12,0.25,0.15, 0,-0.1,0.15); } 
-    else if(type==='smg') { addP(grey, 0.15,0.25,0.7, 0,0.1,0); addP(dark, 0.15,0.3,0.15, 0,-0.15,0.1); addP(dark, 0.1,0.35,0.15, 0,-0.15,-0.15); } 
-    else if(type==='ar') { addP(grey, 0.12,0.2,1.2, 0,0.1,-0.2); addP(dark, 0.15,0.3,0.15, 0,-0.2, 0.2); addP(dark, 0.1,0.4,0.15, 0,-0.15, 0); addP(dark, 0.12,0.25,0.5, 0,0.1, 0.5); } 
-    else if(type==='ak47') { addP(grey, 0.12,0.15,1.1, 0,0.1,-0.2); addP(wood, 0.12,0.3,0.15, 0,-0.2,0.3); addP(wood, 0.15,0.2,0.5, 0,0.05,0.4); addP(dark, 0.08,0.35,0.15, 0,-0.1,0.05); } 
-    else if(type==='shotgun') { addP(grey, 0.15,0.2,1.2, 0,0.1,-0.2); addP(wood, 0.15,0.25,0.6, 0,0.05,0.4); addP(wood, 0.18,0.2,0.4, 0,0.05,-0.4); } 
-    else if(type==='m24') { addP(dark, 0.1,0.15,1.6, 0,0.1,-0.3); addP(wood, 0.12,0.25,0.15, 0,-0.1,0.3); addP(wood, 0.12,0.2,0.8, 0,0.05,0.5); addP(dark, 0.08,0.1,0.4, 0,0.25,0.1); }
-    else if(type==='sniper') { addP(grey, 0.1,0.15,1.8, 0,0.1,-0.4); addP(dark, 0.12,0.25,0.15, 0,-0.1,0.3); addP(dark, 0.12,0.2,0.6, 0,0.1,0.6); addP(dark, 0.08,0.1,0.4, 0,0.25,0.1); }
-    else if(type==='ultimate') { addP(grey, 0.3, 0.3, 1.2, 0, 0, -0.3); addP(dark, 0.35, 0.4, 0.6, 0, 0.05, 0.3); addP(wood, 0.1, 0.4, 0.15, 0, -0.2, 0.5); addP(wood, 0.4, 0.1, 0.15, 0, 0.3, 0.2); }
-    return group;
-}
+const ultMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0x9C27B0, emissive: 0x6A1B9A, emissiveIntensity: 0.8}));
+const ultRx = (Math.random() - 0.5) * (mapSize - 20); const ultRz = (Math.random() - 0.5) * (mapSize - 20);
+const ultRy = getFloorHeight(ultRx, 50, ultRz) + 1.0; ultMesh.position.set(ultRx, ultRy, ultRz); ultMesh.castShadow = true; scene.add(ultMesh); let ultActive = true; 
 
-function createRig(hexColor, isEnemy = false) {
+// ==========================================
+// 8. ASSET RECONSTRUCTION LOADING PIPELINE
+// ==========================================
+); function createRig(hexColor, isEnemy = false) {
     const rig = { wWeight: 0, animations: {}, currentActionName: 'idle', mixer: null };
     const root = new THREE.Group(); rig.root = root;
     const mat = new THREE.MeshStandardMaterial({ color: hexColor, transparent: true, opacity: 0.001 }); rig.mat = mat;
@@ -302,10 +291,10 @@ function createNameTag(nameString) {
     sprite.scale.set(4, 1.0, 1); sprite.position.y = 2.4; return sprite;
 }
 
-function fadeRigAnimation(grid, targetActionName) {
-    if (!grid.animations || !grid.animations[targetActionName]) return; if (grid.currentActionName === targetActionName) return;
-    const currentAction = grid.animations[grid.currentActionName]; const nextAction = grid.animations[targetActionName];
-    grid.currentActionName = targetActionName; if (currentAction) currentAction.fadeOut(0.2); nextAction.reset().fadeIn(0.2).play();
+function fadeRigAnimation(rig, targetActionName) {
+    if (!rig.animations || !rig.animations[targetActionName]) return; if (rig.currentActionName === targetActionName) return;
+    const currentAction = rig.animations[rig.currentActionName]; const nextAction = rig.animations[targetActionName];
+    rig.currentActionName = targetActionName; if (currentAction) currentAction.fadeOut(0.2); nextAction.reset().fadeIn(0.2).play();
 }
 
 function animateRig(rig, lVX, lVZ, isGnd, dt, aimPitch = 0) {
@@ -325,7 +314,9 @@ function equip(w) {
     if(myWpnMesh) myChar.wpnHolder.remove(myWpnMesh); myWpnMesh = createWeaponMesh(w.id); myChar.wpnHolder.add(myWpnMesh);
 }
 equip(weapons.pistol);
-
+// ==========================================
+// 9. HARDWARE SENSORS & GYROSCOPES
+// ==========================================
 const gyroToggle = document.getElementById('gyro-toggle');
 gyroToggle.addEventListener('click', async () => {
     if (gyroToggle.checked) {
@@ -344,6 +335,9 @@ window.addEventListener('devicemotion', (e) => {
     }
 });
 
+// ==========================================
+// 10. PROJECTILE INSTANCES & TRACERS
+// ==========================================
 const activeGrenades = [], sparks = [], bulletShells = [], bulletTracers = [];
 const trajMat = new THREE.LineDashedMaterial({ color: 0x00FF00, dashSize: 0.5, gapSize: 0.2, linewidth: 2 });
 const trajGeo = new THREE.BufferGeometry(); const trajLine = new THREE.Line(trajGeo, trajMat); scene.add(trajLine); trajLine.visible = false;
@@ -354,6 +348,9 @@ function spawnVFX(pos, col, amt=3, spd=10, size=0.04, dir=null) { const mat = ne
 function spawnTracer(startPos, endPos, colorHex = 0xFFD700) { const dist = startPos.distanceTo(endPos); const mid = startPos.clone().lerp(endPos, 0.5); const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9, depthTest: true }); const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, dist), mat); mesh.position.copy(mid); mesh.lookAt(endPos); scene.add(mesh); bulletTracers.push({ mesh: mesh, mat: mat, life: 1.0 }); }
 function spawnShell(pos, curYaw) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.08), new THREE.MeshStandardMaterial({color: 0xFFD700})); m.position.copy(pos); scene.add(m); const ejectDir = new THREE.Vector3(1, 0.8, -0.2).applyAxisAngle(new THREE.Vector3(0,1,0), curYaw + (Math.random()*0.4 - 0.2)); bulletShells.push({m, v: ejectDir.multiplyScalar(5 + Math.random()*3), life: 2.0}); }
 
+// ==========================================
+// 11. MULTIPLAYER P2P SIGNALS
+// ==========================================
 let peer, myId, isHost = false, maxPlayers = 2; const PEER_PREFIX = "voxst-v3x-"; let hostConns = []; let clientConn = null; const ghostSquad = {}; const bots = [];
 
 document.getElementById('btn-solo').onclick = () => { autoFullscreen(); Sfx.init(); state.mode = 'solo'; document.getElementById('start-screen').style.display = 'none'; if(isTouchDevice) document.getElementById('touch-controls').style.display = 'block'; document.getElementById('ui-layer').style.display = 'block'; state.isPlaying = true; for(let i=0; i<8; i++) spawnBot(); };
@@ -391,6 +388,9 @@ function spawnBot() { const b = createRig(0xC62828, true); b.root.position.set((
 function killBot(bMatch) { if(!bMatch) return; scene.remove(bMatch.root); let idx = bots.indexOf(bMatch); if(idx > -1) bots.splice(idx, 1); registerKill(); if(state.mode === 'solo') setTimeout(spawnBot, 2000); }
 function registerKill() { state.score++; state.coins+=50; document.getElementById('score-val').innerText=state.score; document.getElementById('coin-val').innerText=state.coins; saveKills(1); Sfx.coin(); if (state.mode === 'multi' && state.score >= WIN_TARGET) showMatchOverScreen(true); }
 
+// ==========================================
+// 12. COMBAT & HIT CALCULATION LOGIC
+// ==========================================
 function showDamageIndicator(attackerPos) { if(!attackerPos) return; const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); camDir.y = 0; const attDir = attackerPos.clone().sub(myChar.root.position); attDir.y = 0; const cross = camDir.clone().cross(attDir).y; const dot = camDir.dot(attDir.normalize()); const angle = Math.atan2(cross, dot) * (180 / Math.PI); document.getElementById('damage-indicator-container').style.transform = `translate(-50%, -50%) rotate(${-angle}deg)`; document.getElementById('dmg-arc').style.opacity = '1'; setTimeout(() => { document.getElementById('dmg-arc').style.opacity = '0'; }, 100); }
 function showDeathScreen() { state.isPlaying = false; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('touch-controls').style.display = 'none'; document.getElementById('death-screen').style.display = 'flex'; document.getElementById('death-kills').innerText = state.score; document.getElementById('death-coins').innerText = state.coins; }
 function showMatchOverScreen(isVictory) { state.isPlaying = false; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('touch-controls').style.display = 'none'; const moScreen = document.getElementById('match-over-screen'); moScreen.style.display = 'flex'; document.getElementById('match-over-title').innerText = isVictory ? "VICTORY" : "DEFEAT"; document.getElementById('mo-kills').innerText = state.score; }
@@ -421,7 +421,7 @@ function fire() {
     const hits = ray.intersectObjects(raycastTargets);
     if(hits.length > 0) {
         const obj = hits[0].object, pnt = hits[0].point;
-        const hitRig = obj.userData.grid || obj.userData.rig;
+        const hitRig = obj.userData.rig;
         if (hitRig) {
             const bMatch = bots.find(b => b === hitRig);
             if(bMatch) { bMatch.hp -= currentWeapon.dmg; Sfx.hit(); spawnVFX(pnt, 0xD32F2F, 3, 10, 0.05); if(bMatch.hp <= 0) killBot(bMatch); }
@@ -432,6 +432,9 @@ function fire() {
 function toggleShop() { if(!state.isPlaying) return; state.inShop = !state.inShop; document.getElementById('shop-ui').style.display = state.inShop ? 'block' : 'none'; if(state.inShop) { const c = document.getElementById('shop-items-container'); c.innerHTML=''; Object.values(weapons).forEach(w => { if (w.id === 'ultimate') return; c.innerHTML += `<div class="shop-item"><div><b>${w.name}</b></div><button class="buy-btn" onclick="window.eq('${w.id}')">EQUIP</button></div>`; }); } }
 document.getElementById('close-shop-btn').onclick = toggleShop; window.eq = (id) => { equip(weapons[id]); toggleShop(); };
 
+// ==========================================
+// 13. DEVICE HARDWARE TOUCH RECEPTORS
+// ==========================================
 let pVelY=0, pGnd=true, canDoubleJump=true;
 function doJump() { if(pGnd) { pVelY = 14.5; pGnd = false; canDoubleJump = true; Sfx.jump(); } else if (canDoubleJump) { pVelY = 12.0; canDoubleJump = false; Sfx.jump(); } }
 
@@ -457,7 +460,7 @@ document.getElementById('btn-shop').addEventListener('touchstart', e=>{ e.preven
 document.getElementById('btn-aim').addEventListener('touchstart', e => { e.preventDefault(); state.isAiming = !state.isAiming; });
 
 // ==========================================
-// TICK RUNNER SYSTEM
+// 14. TICK RUNNER CLOCK
 // ==========================================
 const clock = new THREE.Clock();
 function animate() {
