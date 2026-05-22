@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Voxel Strike - Mobile Marine Operations</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body oncontextmenu="return false;">
+
+    <div id="landscape-warning">
+        <h2 style="color: #FFD700; margin-bottom: 10px;">ROTATE YOUR DEVICE</h2>
+        <p>This experience requires landscape mode.</p>
+    </div>
+
+    <div id="game-container"></div>
+    <div id="damage-flash"></div>
+    
+    <div id="ui-layer">
+        <div id="crosshair">✛</div>
+        <div id="hit-marker">✖</div>
+        <div id="damage-indicator-container"><div id="dmg-arc"></div></div>
+        
+        <div class="hud-box" id="bottom-left-hud">
+            HP: <span id="hp-val" class="text-green">100</span><br>
+            <span class="text-blue" id="weapon-name">M1911</span><br>
+            AMMO: <span id="ammo-val">12</span>/<span id="max-ammo-val">12</span><br>
+            GNDS: <span id="grenade-val" class="text-org">3</span>
+        </div>
+        
+        <div class="hud-box" id="top-right-hud">
+            COINS: <span id="coin-val" class="text-gold">0</span><br>
+            KILLS: <span id="score-val">0</span>
+        </div>
+        <div id="room-info" title="Click to hide/show. Desktop: Press H"></div>
+    </div>
+
+    <div id="death-screen">
+        <h1>YOU DIED</h1>
+        <div id="death-stats">Current Match Kills: <span id="death-kills" class="text-gold">0</span><br>Match Coins: <span id="death-coins" class="text-gold">0</span></div>
+        <button id="btn-retry">REDEPLOY</button>
+    </div>
+
+    <div id="match-over-screen">
+        <h1 id="match-over-title">VICTORY</h1>
+        <div id="match-over-stats">Final Kills: <span id="mo-kills" class="text-gold">0</span><br>Total Deaths: <span id="mo-deaths" class="text-gold">0</span></div>
+        <button id="btn-leave-match">LEAVE MATCH</button>
+    </div>
+
+    <div id="hud-edit-overlay">
+        <div id="hud-edit-msg">DRAG ICONS TO MOVE</div>
+        <button id="btn-save-hud">SAVE HUD</button>
+    </div>
+
+    <div id="touch-controls">
+        <div id="move-zone"><div id="joystick"></div></div>
+        <div id="look-zone"></div>
+        <div class="m-btn" id="btn-shop" style="right: 20px; top: 20px;" title="Shop">🛒</div>
+        <div class="m-btn" id="btn-crouch" style="left: 265px; bottom: 20px;" title="Crouch Toggle">🧎</div>
+        <div class="m-btn" id="btn-sprint" style="left: 190px; bottom: 20px;" title="Sprint Toggle">🏃</div>
+        <div class="m-btn" id="btn-reload" style="right: 170px; bottom: 20px;" title="Reload">🔄</div>
+        <div class="m-btn" id="btn-grenade" style="right: 95px; bottom: 95px; color:#FF9800;" title="Hold to Toss Grenade">💣</div>
+        <div class="m-btn" id="btn-aim" style="right: 170px; bottom: 95px;" title="Aim Toggle">🎯</div>
+        <div class="m-btn" id="btn-jump" style="right: 20px; bottom: 95px;" title="Jump">⬆️</div>
+        <div class="m-btn" id="btn-fire" style="right: 20px; bottom: 20px; width: 70px; height: 70px; font-size: 32px; background: rgba(244, 67, 54, 0.7); border-color: rgba(244, 67, 54, 0.9);" title="Hold to Fire">🔥</div>
+    </div>
+
+    <div id="shop-ui">
+        <h2 style="color:#FFD700; text-align:center; margin-top:0;">ARMORY SHOP</h2>
+        <div id="shop-items-container"></div>
+        <button class="close-shop" id="close-shop-btn">RETURN TO MISSION</button>
+    </div>
+
+    <div id="start-screen">
+        <h1>VOXEL STRIKE</h1>
+        <p style="color:#aaa; font-weight:bold; margin-bottom:10px; font-size: 14px;">Desktop: WASD + Shift/C + R-Click + G | Mobile: Touch / Hardware Gyro</p>
+        
+        <div class="lobby-panel" style="padding: 15px;">
+            <input type="text" id="player-profile-name" placeholder="Enter Callsign">
+            <div class="profile-stats">Total Lifetime Kills: <strong id="lifetime-kills" class="text-gold">0</strong></div>
+            <div class="sens-container">
+                <label for="sens-slider">Look Sensitivity: <span id="sens-val">1.0</span>x</label>
+                <input id="sens-slider" type="range" min="0.2" max="3.0" step="0.1" value="1.0">
+                <label class="checkbox-container">
+                    <input type="checkbox" id="gyro-toggle"> Enable Gyroscope Aiming
+                </label>
+            </div>
+        </div>
+
+        <div id="menu-main" class="lobby-panel">
+            <button class="btn btn-gray" id="btn-fullscreen" style="margin-bottom: 5px;">&#x26F6; MAXIMIZE / FULLSCREEN</button>
+            <button class="btn" id="btn-solo">SOLO SURVIVAL (PvE)</button>
+            <button class="btn btn-blue" id="btn-multi-menu">MULTIPLAYER (PvP)</button>
+            <button class="btn btn-org" id="btn-edit-hud" style="display: none;">CUSTOMIZE HUD (MOBILE)</button>
+        </div>
+
+        <div id="menu-multi" class="lobby-panel" style="display:none;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-purple" id="btn-host-1v1" style="flex:1; min-width: 45%;">HOST 1v1</button>
+                <button class="btn btn-purple" id="btn-host-2v2" style="flex:1; min-width: 45%;">HOST 2v2</button>
+                <button class="btn btn-purple" id="btn-host-1v3" style="flex:1 100%;">HOST 1v3 (BOSS MODE)</button>
+            </div>
+            <div style="height:1px; background:rgba(255,255,255,0.2); margin:5px 0;"></div>
+            <input type="text" id="join-id" placeholder="Enter 6-Char Code" maxlength="6" style="text-transform:uppercase;">
+            <button class="btn btn-blue" id="btn-join">JOIN ROOM</button>
+            <button class="btn btn-gray" id="btn-back">BACK TO MAIN</button>
+        </div>
+    </div>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>
